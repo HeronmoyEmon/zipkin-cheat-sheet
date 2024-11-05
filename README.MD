@@ -2,7 +2,6 @@
 
 Zipkin is an open-source distributed tracing system that helps monitor, manage, and visualize the flow of data across microservices architectures. Originally developed by Twitter, Zipkin is now widely used to track the performance and latency of transactions across a distributed system. It’s especially useful in complex, cloud-based environments where multiple services interact, making it challenging to identify bottlenecks or pinpoint failures.
 
-
 # Elasticsearch and Zipkin Docker Compose Setup
 
 This repository contains a Docker Compose setup for running Elasticsearch and Zipkin with data persistence and snapshot backup configuration.
@@ -25,7 +24,7 @@ mkdir -p /path/to/your/elasticsearch/data
 
 ### Step 2: Create elasticsearch.yml
 
-Create a file named elasticsearch.yml with the following content:
+Create a file named `elasticsearch.yml` with the following content:
 
 ```yml
 # Elasticsearch configuration
@@ -50,7 +49,6 @@ network.host: 0.0.0.0
 
 # Discovery settings
 discovery.type: single-node
-
 # X-Pack security settings (optional, if you are using X-Pack)
 # xpack.security.enabled: true
 # xpack.security.transport.ssl.enabled: true
@@ -64,10 +62,10 @@ discovery.type: single-node
 
 ### Step 3: Create docker-compose.yml
 
-Create a file named docker-compose.yml with the following content:
+Create a file named `docker-compose.yml` with the following content:
 
 ```yml
-version: '3.8'
+version: "3.8"
 
 services:
   elasticsearch:
@@ -83,6 +81,12 @@ services:
       - esdata:/usr/share/elasticsearch/data
       - /path/to/your/snapshot/repo:/usr/share/elasticsearch/snapshots
       - /path/to/your/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml
+    healthcheck:
+      test:
+        ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
   zipkin:
     image: openzipkin/zipkin
@@ -93,7 +97,8 @@ services:
     ports:
       - "9411:9411"
     depends_on:
-      - elasticsearch
+      elasticsearch:
+        condition: service_healthy
 
 volumes:
   esdata:
@@ -130,6 +135,10 @@ curl -X PUT "localhost:9200/_snapshot/my_backup" -H 'Content-Type: application/j
 
 Create a snapshot of your Elasticsearch indices:
 
+```sh
+curl -X PUT "localhost:9200/_snapshot/my_backup/snapshot_1?wait_for_completion=true"
+```
+
 ### Step 7: Restore a Snapshot
 
 To restore a snapshot, use the following command:
@@ -142,3 +151,4 @@ curl -X POST "localhost:9200/_snapshot/my_backup/snapshot_1/_restore"
 
 - Adjust the memory settings in ES_JAVA_OPTS as needed based on the available resources and the expected workload.
 - Ensure that the paths specified in the docker-compose.yml file match the actual paths on your host machine.
+- This setup ensures that Elasticsearch and Zipkin are configured with data persistence and snapshot backup capabilities.%
